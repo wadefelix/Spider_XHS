@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>spider xhs</title>
+    <script type="text/javascript">
+      function fetchFile() {
+        let params = {};
+        params["cookies"] = document.getElementById("cookies").value;
+        params["notes_url"] = document.getElementById("notes_url").value;
+        fetch("/spider-xhs", {
+          method: "POST",
+          body: JSON.stringify(params),
+          header: {
+            "Content-Type": "application/json;charset=UTF-8",
+          },
+        }).then(function (response) {
+          const filename = response.headers
+            .get("content-disposition")
+            .split(";")[1]
+            .split("=")[1];
+
+          response.blob().then((blob) => {
+            const link = document.createElement("a");
+            link.style.display = "none";
+            link.download = filename;
+            link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            document.body.removeChild(link);
+          });
+        });
+      }
+    </script>
+  </head>
+  <body>
+    cookies: <input type="text" name="cookies" id="cookies" /><br />
+    notes url: <input type="text" name="notes_url" id="notes_url" /><br />
+    <input type="button" value="submit" onclick="fetchFile()" />
+  </body>
+</html>
