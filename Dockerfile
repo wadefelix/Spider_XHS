@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
-COPY . .
+COPY package.json .
+COPY package-lock.json .
 
 RUN apt-get update \
  && apt-get install -yq --no-install-recommends \
@@ -36,6 +37,8 @@ EXPOSE 5000
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
 
+COPY . .
 # docker build -t spider_xhs .
 # docker run -it spider_xhs bash
-# CMD ["python", "main.py"] 
+EXPOSE 8000
+CMD ["python", "server.py"] 
