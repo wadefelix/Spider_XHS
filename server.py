@@ -8,7 +8,8 @@ import tempfile
 import os.path as osp
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from main import Data_Spider
+from spider.spider import Data_Spider
+from xhs_utils.xhs_pc import XHSPcAuth
 
 
 class MyHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -58,15 +59,17 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             data = json.loads(req_data)
             xhs_cookies = data.get('cookies', None)
             xhs_notes_url = data.get('notes_url', None)
-            data_spider = Data_Spider()
+            auth = XHSPcAuth.from_cookie(xhs_cookies)
+            data_spider = Data_Spider(auth=auth)
             notes = xhs_notes_url.split(',')
 
             with tempfile.TemporaryDirectory() as tmpdirname:
                 base_path = {
                     'media': tmpdirname,
                 }
-                data_spider.spider_some_note(notes, xhs_cookies, base_path,
-                                             'media')
+                data_spider.spider_some_note(notes=notes,
+                                             base_path=base_path,
+                                             save_choice='media')
 
                 temp_dir = tempfile.gettempdir()
                 archive_fd, archive_path = tempfile.mkstemp(suffix='.zip',
