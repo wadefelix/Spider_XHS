@@ -61,6 +61,7 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
             xhs_notes_url = data.get('notes_url', None)
             auth = XHSPcAuth.from_cookie(xhs_cookies)
             data_spider = Data_Spider(auth=auth)
+            data_spider.xhs_apis.bootstrap()
             notes = xhs_notes_url.split(',')
 
             with tempfile.TemporaryDirectory() as tmpdirname:

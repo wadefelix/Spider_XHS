@@ -13,8 +13,10 @@ from xhs_utils.http_util import REQUEST_TIMEOUT
 
 
 def norm_str(value):
-    new_str = re.sub(r"[\\/:*?\"<>| ]+", "", value).replace('\n', '').replace('\r', '')
+    new_str = re.sub(r"[\\/:*?\"<>| ]+", "",
+                     value).replace('\n', '').replace('\r', '')
     return new_str
+
 
 def norm_text(text):
     ILLEGAL_CHARACTERS_RE = re.compile(r'[\000-\010]|[\013-\014]|[\016-\037]')
@@ -26,6 +28,7 @@ def timestamp_to_str(timestamp):
     time_local = time.localtime(timestamp / 1000)
     dt = time.strftime("%Y-%m-%d %H:%M:%S", time_local)
     return dt
+
 
 def handle_user_info(data, user_id):
     home_url = f'https://www.xiaohongshu.com/user/profile/{user_id}'
@@ -66,6 +69,7 @@ def handle_user_info(data, user_id):
         'tags': tags,
     }
 
+
 def handle_note_info(data):
     note_id = data['id']
     note_url = data['url']
@@ -99,9 +103,14 @@ def handle_note_info(data):
         video_cover = image_list[0] if image_list else None
         video_addr = None
         video_info = data.get('note_card', {}).get('video', {})
-        streams = video_info.get('media', {}).get('stream', {}).get('h264', [])
-        if streams:
-            video_addr = streams[0].get('master_url') or streams[0].get('url')
+        #streams = video_info.get('media', {}).get('stream', {}).get('h264', [])
+        #if streams:
+        #    video_addr = streams[0].get('master_url') or streams[0].get('url')
+        streams = video_info.get('media', {}).get('stream', {})
+        for ef in ['EF7', 'EF6', 'EF5', 'EF4']:  # 这个与编码率有关，越大越清晰
+            clips = streams.get(ef, [])
+            if clips:
+                video_addr = [clip.get('master_url') for clip in clips]
         if not video_addr and 'consumer' in video_info:
             origin_key = video_info['consumer'].get('origin_video_key')
             if origin_key:
@@ -142,6 +151,7 @@ def handle_note_info(data):
         'upload_time': upload_time,
         'ip_location': ip_location,
     }
+
 
 def handle_comment_info(data):
     note_id = data['note_id']
@@ -186,19 +196,43 @@ def handle_comment_info(data):
         'ip_location': ip_location,
         'pictures': pictures,
     }
+
+
 def save_to_xlsx(datas, file_path, type='note'):
     wb = openpyxl.Workbook()
     ws = wb.active
     if type == 'note':
-        headers = ['笔记id', '笔记url', '笔记类型', '用户id', '用户主页url', '昵称', '头像url', '标题', '描述', '点赞数量', '收藏数量', '评论数量', '分享数量', '视频封面url', '视频地址url', '图片地址url列表', '标签', '上传时间', 'ip归属地']
+        headers = [
+            '笔记id', '笔记url', '笔记类型', '用户id', '用户主页url', '昵称', '头像url', '标题',
+            '描述', '点赞数量', '收藏数量', '评论数量', '分享数量', '视频封面url', '视频地址url',
+            '图片地址url列表', '标签', '上传时间', 'ip归属地'
+        ]
     elif type == 'user':
-        headers = ['用户id', '用户主页url', '用户名', '头像url', '小红书号', '性别', 'ip地址', '介绍', '关注数量', '粉丝数量', '作品被赞和收藏数量', '标签']
+        headers = [
+            '用户id', '用户主页url', '用户名', '头像url', '小红书号', '性别', 'ip地址', '介绍',
+            '关注数量', '粉丝数量', '作品被赞和收藏数量', '标签'
+        ]
     else:
-        headers = ['笔记id', '笔记url', '评论id', '用户id', '用户主页url', '昵称', '头像url', '评论内容', '评论标签', '点赞数量', '上传时间', 'ip归属地', '图片地址url列表']
+        headers = [
+            '笔记id', '笔记url', '评论id', '用户id', '用户主页url', '昵称', '头像url', '评论内容',
+            '评论标签', '点赞数量', '上传时间', 'ip归属地', '图片地址url列表'
+        ]
     field_keys = {
-        'note': ['note_id', 'note_url', 'note_type', 'user_id', 'home_url', 'nickname', 'avatar', 'title', 'desc', 'liked_count', 'collected_count', 'comment_count', 'share_count', 'video_cover', 'video_addr', 'image_list', 'tags', 'upload_time', 'ip_location'],
-        'user': ['user_id', 'home_url', 'nickname', 'avatar', 'red_id', 'gender', 'ip_location', 'desc', 'follows', 'fans', 'interaction', 'tags'],
-        'comment': ['note_id', 'note_url', 'comment_id', 'user_id', 'home_url', 'nickname', 'avatar', 'content', 'show_tags', 'like_count', 'upload_time', 'ip_location', 'pictures'],
+        'note': [
+            'note_id', 'note_url', 'note_type', 'user_id', 'home_url',
+            'nickname', 'avatar', 'title', 'desc', 'liked_count',
+            'collected_count', 'comment_count', 'share_count', 'video_cover',
+            'video_addr', 'image_list', 'tags', 'upload_time', 'ip_location'
+        ],
+        'user': [
+            'user_id', 'home_url', 'nickname', 'avatar', 'red_id', 'gender',
+            'ip_location', 'desc', 'follows', 'fans', 'interaction', 'tags'
+        ],
+        'comment': [
+            'note_id', 'note_url', 'comment_id', 'user_id', 'home_url',
+            'nickname', 'avatar', 'content', 'show_tags', 'like_count',
+            'upload_time', 'ip_location', 'pictures'
+        ],
     }
     keys = field_keys.get(type, field_keys['comment'])
     ws.append(headers)
@@ -206,6 +240,7 @@ def save_to_xlsx(datas, file_path, type='note'):
         ws.append([norm_text(str(data.get(key, ''))) for key in keys])
     wb.save(file_path)
     logger.info(f'数据保存至 {file_path}')
+
 
 def download_media(path, name, url, type):
     if not url:
@@ -227,6 +262,7 @@ def download_media(path, name, url, type):
                 f.write(data)
                 size += len(data)
 
+
 def save_user_detail(user, path):
     with open(Path(path) / 'detail.txt', mode="w", encoding="utf-8") as f:
         # 逐行输出到txt里
@@ -242,6 +278,7 @@ def save_user_detail(user, path):
         f.write(f"粉丝数量: {user['fans']}\n")
         f.write(f"作品被赞和收藏数量: {user['interaction']}\n")
         f.write(f"标签: {user['tags']}\n")
+
 
 def save_note_detail(note, path):
     with open(Path(path) / 'detail.txt', mode="w", encoding="utf-8") as f:
@@ -267,7 +304,6 @@ def save_note_detail(note, path):
         f.write(f"ip归属地: {note['ip_location']}\n")
 
 
-
 @retry(tries=3, delay=1)
 def download_note(note_info, path, save_choice):
     note_id = note_info['note_id']
@@ -278,7 +314,8 @@ def download_note(note_info, path, save_choice):
     nickname = norm_str(nickname)[:20]
     if title.strip() == '':
         title = f'无标题'
-    save_path = str(Path(path) / f'{nickname}_{user_id}' / f'{title}_{note_id}')
+    save_path = str(
+        Path(path) / f'{nickname}_{user_id}' / f'{title}_{note_id}')
     check_and_create_path(save_path)
     with open(Path(save_path) / 'info.json', mode='w', encoding='utf-8') as f:
         f.write(json.dumps(note_info) + '\n')
@@ -289,11 +326,18 @@ def download_note(note_info, path, save_choice):
             download_media(save_path, f'image_{img_index}', img_url, 'image')
     if save_choice in ['media', 'media-video', 'all']:
         if note_info.get('video_cover'):
-            download_media(save_path, 'cover', note_info['video_cover'], 'image')
+            download_media(save_path, 'cover', note_info['video_cover'],
+                           'image')
         else:
             logger.warning(f"video cover url is empty: {note_id}")
-        if note_info.get('video_addr'):
-            download_media(save_path, 'video', note_info['video_addr'], 'video')
+        video_addr = note_info.get('video_addr')
+        if video_addr:
+            if isinstance(video_addr, str):
+                download_media(save_path, 'video', video_addr, 'video')
+            elif isinstance(video_addr, list):
+                for img_index, img_url in enumerate(video_addr):
+                    download_media(save_path, f'video_{img_index}', img_url,
+                                   'video')
         else:
             logger.warning(f"video url is empty: {note_id}")
     return save_path
